@@ -360,6 +360,37 @@ def render_buy_section(section_key, title):
 # ---------- page ----------
 
 st.set_page_config(page_title="Positions", layout="wide")
+
+# ---------- password gate ----------
+# The real password lives in Streamlit Cloud's "Secrets" (Settings > Secrets),
+# never in this file or in GitHub. Locally, put it in .streamlit/secrets.toml
+# (a file that should NOT be committed to git):
+#     app_password = "your-password-here"
+
+
+def check_password():
+    def password_entered():
+        import hmac
+        correct = st.secrets.get("app_password", None)
+        if correct is not None and hmac.compare_digest(st.session_state.get("pw_input", ""), correct):
+            st.session_state["password_correct"] = True
+            st.session_state.pop("pw_input", None)
+        else:
+            st.session_state["password_correct"] = False
+
+    if st.session_state.get("password_correct", False):
+        return True
+
+    st.title("Positions")
+    st.text_input("Password", type="password", key="pw_input", on_change=password_entered)
+    if "password_correct" in st.session_state and not st.session_state["password_correct"]:
+        st.error("Incorrect password.")
+    return False
+
+
+if not check_password():
+    st.stop()
+
 st.title("Positions")
 st.caption("Mirrors your Excel workbook: grouped by currency, with subtotals and HKD→USD equivalents.")
 
